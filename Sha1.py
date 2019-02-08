@@ -1,5 +1,4 @@
-# taken from: https://codereview.stackexchange.com/questions/37648/python-implementation-of-sha1
-import hashlib
+# SHA1 code taken from: https://codereview.stackexchange.com/questions/37648/python-implementation-of-sha1
 import binascii
 
 
@@ -88,28 +87,34 @@ def sha1(data,h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4 = 0xC3D
     return '%08x%08x%08x%08x%08x' % (h0, h1, h2, h3, h4)
 
 key_bits = 128 # how many bits
-key_len = 128 // 8 # how many bytes/characters
+key = bytearray(b'\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11')
 msg = "No one has completed lab 2 so give them all a 0"
-new_msg = " Except Tyler Brady"
-# msg_disgest = SHA1(key||message)
-msg_digest = "f4b645e89faaec2ff8e443c595009c16dbdfba4b" #TODO change to hex
-#msg_digest = binascii.hexlify(msg_digest)
+new_msg = "Except Tyler Brady"
+msg_digest = "f4b645e89faaec2ff8e443c595009c16dbdfba4b"
 data = [
         0x4e, 0x6f, 0x20, 0x6f, 0x6e, 0x65, 0x20, 0x68, 0x61, 0x73, 0x20, 0x63, 0x6f, 0x6d, 0x70, 0x6c,
         0x65, 0x74, 0x65, 0x64, 0x20, 0x6c, 0x61, 0x62, 0x20, 0x32, 0x20, 0x73, 0x6f, 0x20, 0x67, 0x69,
         0x76, 0x65, 0x20, 0x74, 0x68, 0x65, 0x6d, 0x20, 0x61, 0x6c, 0x6c, 0x20, 0x61, 0x20, 0x30
     ]
-print(sha1("hello world"))
-#s = hashlib.sha1()
-#s.update("hello world".encode('utf-8'))
-#print(s.hexdigest())
+
 # original: key || msg || padding || H(key||msg)
-# TODO add padding, get rid of X's?
 # forged = key || original msg || padding || new message
-forged_m = get_padding(("X" * key_bits) + msg) + new_msg
-forged_m = forged_m[key_bits:]
+forged_m = bytearray(key)
+forged_m[len(forged_m):] = bytearray(msg,"utf-8")
+forged_m[len(forged_m):] = bytearray(new_msg,"utf-8")
+
+# add adding to byte array
+forged_m[len(key) + len(msg):len(new_msg)] = [0x80, 0x01, 0xf8]
+counter = 0
+while counter != 62:   # Need to account for above three values?
+    forged_m[len(key) + len(msg) + 1:len(new_msg)] = [0x00]
+    counter += 1
+
+forged_m = forged_m[len(key):]
 dec = int(msg_digest,16)
 arr = divide(dec)
-forged_d = sha1(forged_m, arr[0], arr[1], arr[2], arr[3], arr[4], (key_len + len(forged_m)) * 8) # * 8??
-print(binascii.hexlify(forged_d))
+forged_d = sha1(new_msg, arr[0], arr[1], arr[2], arr[3], arr[4], (len(key) + len(forged_m)) * 8)
+print(forged_d)
+print(forged_m)
+print(binascii.hexlify(bytearray(forged_d,"utf-8")))
 print(binascii.hexlify(forged_m))
